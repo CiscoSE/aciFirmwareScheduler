@@ -22,7 +22,7 @@ sys.path.append(os.getcwd()+'/bin')
 
 from common import timeFunctions
 from common import loggingFunctions as LOG
-from common import urlFunctions
+from aciFirmwareActions import phase1
 
 #Clear the screen
 os.system('clear')
@@ -49,17 +49,7 @@ args = argsParse.parse_args()
 
 # Phase 1 (Test to be sure we can authenticate)
 LOG().writeEvent(msg=f'########## Starting Phase 1 - Testing Authentication to {args.apicName} ##########')
-URL = urlFunctions(args=args)
-cookie = URL.getCookie()
-if cookie:
-    if args.debug:
-        # We only print the cookie if we are in debug mode
-        print(f"Cookie:\n{cookie}")
-    # We print status either way.    
-    LOG().writeEvent(msg='Cookie Obtained', msgType="INFO")
-else:
-    LOG().writeEvent(msg='Cookie was not obtained', msgType='FAIL')
-    exit()
+cookie = phase1(args).getCookie()
 # Phase 2 (Test that the firmware group we are looking for exists)
 
 
