@@ -72,12 +72,24 @@ class phase2:
         LOG().writeEvent(msg="Thats all folks!!!", msgType='FAIL')
         exit()
 
-
     def compareGroups(self, aciGroups, firmwareGroups):
+        returnList={}
         if self.debug >= 2:
             LOG().writeEvent(msg='Starting Group Comparison', msgType='INFO')
         if self.debug >= 3:
-            print(f'{aciGroups}')
+            LOG().writeEvent(msg=f'JSON we have to work with at this point:\n{aciGroups}', msgType='INFO')
+            LOG().writeEvent(msg=f'Groups we know about:\n{firmwareGroups}', msgType='INFO')
+        for group in aciGroups:
+            groupName = group['firmwareFwGrp']['attributes']['name']
+            if self.debug >= 1:
+                LOG().writeEvent(msg=f'Assessing Group: {groupName}',msgType='INFO')
+            if self.debug >= 3:
+                LOG().writeEvent(msg=f'Firmware Attribute Information:\n{group}',msgType='INFO')
+            if groupName in firmwareGroups:
+                LOG().writeEvent(msg=f'Adding {groupName} to list of groups to upgrade',msgType='INFO')
+                returnList[(groupName)] = group['firmwareFwGrp']['attributes']['dn']
+        if self.debug >= 3:
+            LOG().writeEvent(f'List of groups we are returning for uprade:\n{returnList}', msgType='INFO')
 
 
     def getListOfGroups(self):
