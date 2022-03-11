@@ -116,7 +116,7 @@ class inputSupport:
     def answerYesNo(self, message):
         questionExit = True
         while questionExit == True:
-            os.system('clear')
+            #os.system('clear')
             print (f"{message}\n[Yes / No]")
             newServerName = input().lower()
             if newServerName in {'yes','y','ye'}:
