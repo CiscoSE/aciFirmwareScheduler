@@ -15,6 +15,7 @@ IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 or implied.'''
 
 #Modules
+from cmath import phase
 import sys, os, argparse
 
 #Add custom modules bin directory to path
@@ -24,6 +25,8 @@ from common import timeFunctions
 from common import loggingFunctions as LOG
 from aciFirmwareActions import phase1
 from aciFirmwareActions import phase2
+from aciFirmwareActions import phase3
+
 
 #Clear the screen
 os.system('clear')
@@ -39,12 +42,12 @@ of Cisco ACI for the designated upgrade group.
 '''
 
 argsParse = argparse.ArgumentParser(description=helpmsg)
-argsParse.add_argument('--starttime', '-t', action='store',  dest='firmwareStartTime',                    help="Start time for firmware update"        )
-argsParse.add_argument('--groups',    '-g', action='append', dest='firmwareGroups', default=[],            help='Provide a list of IPv4 addresses to search for (one or many)')
-argsParse.add_argument('--aci-user',  '-u', action='store',  dest='apicUser',     default=defaultUser,   help='Provide the user name for ACI access. Default is admin')
-argsParse.add_argument('--apic',      '-a', action='store',  dest='apicName',    default=defaultServer, help='Provide APIC DNS name or IP address')
-argsParse.add_argument('--aci-pass',  '-p', action='store',  dest='password',      default='',            help='Enter Password for APIC access. If none provided, you will be prompted')
-argsParse.add_argument('-v',	            action='count',  dest='debug',	       default=False, 	      help='Advanced Output')
+argsParse.add_argument('--minutes', '-m', action='store',    dest='minutesUntilStart', default=30,            help="Minutes to wait until script should start the firmware update"        )
+argsParse.add_argument('--groups',    '-g', action='append', dest='firmwareGroups',    default=[],            help='Provide a list of IPv4 addresses to search for (one or many)')
+argsParse.add_argument('--aci-user',  '-u', action='store',  dest='apicUser',          default=defaultUser,   help='Provide the user name for ACI access. Default is admin')
+argsParse.add_argument('--apic',      '-a', action='store',  dest='apicName',          default=defaultServer, help='Provide APIC DNS name or IP address')
+argsParse.add_argument('--aci-pass',  '-p', action='store',  dest='password',          default='',            help='Enter Password for APIC access. If none provided, you will be prompted')
+argsParse.add_argument('-v',	            action='count',  dest='debug',	           default=False, 	      help='Advanced Output')
 #argsParse.add_argument('-d',         action='store',      dest='directory',  default='./',               help='Directory to write csv report to')
 args = argsParse.parse_args()
 
@@ -54,14 +57,17 @@ cookie = phase1(args).getCookie()
 
 # Phase 2 (Test that the firmware group we are looking for exists)
 LOG().writeEvent(msg=f'########## Starting Phase 2 - Checking Groups to see what should be updated ##########')
-phase2Result=phase2(cookie=cookie,args=args).verifyGroups() 
+phase2Result=phase2(cookie=cookie,args=args).verifyGroups()
+# We invalidate the existing cookie, because we are going to get another one when it is time to complete the firmware update.
+del cookie
 
-# Phase 3 (Confirm that the right time has been selected)
+# Phase 3 (Confirm that the right time has been selected and then wait)
+LOG().writeEvent(msg=f'########## Starting Phase 3 - Waiting to start firmware update ##########')
+phase3().confirmTimeToStart(int(args.minutesUntilStart))
 
-# Phase 4 (Provide a count down timer)
+# Phase 4 (Obtain Token to trigger update)
+LOG().writeEvent(msg=f'########## Starting Phase 4 - Getting a new token ##########')
 
-# Phase 5 (Obtain Token to trigger update)
+# Phase 5 (Trigger firmware update)
 
-# Phase 6 (Trigger firmware update)
-
-# Phase 7 (Validate that firmware update has started)
+# Phase 6 (Validate that firmware update has started)

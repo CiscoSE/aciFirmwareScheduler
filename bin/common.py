@@ -14,9 +14,7 @@ IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 or implied.'''
 
 import requests
-import time
-import json
-import re
+import time, json, re, os, datetime
 
 #Required for self signed certificate handling.
 from urllib3.exceptions import InsecureRequestWarning
@@ -110,3 +108,18 @@ class urlFunctions:
         if self.debug > 2:
             loggingFunctions().writeEvent(msg=f'Logon Request Attributes\n{logonRequestAttributes}', msgType='INFO')
         return {'APIC-Cookie': logonRequestAttributes['token']}
+
+class inputSupport:
+    def __init__(self):
+        return
+
+    def answerYesNo(self, message):
+        questionExit = True
+        while questionExit == True:
+            os.system('clear')
+            print (f"{message}\n[Yes / No]")
+            newServerName = input().lower()
+            if newServerName in {'yes','y','ye'}:
+                return True
+            elif newServerName in {'no','n'}:
+                return False

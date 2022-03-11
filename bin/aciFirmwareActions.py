@@ -16,7 +16,9 @@ or implied.'''
 from re import I
 from common import urlFunctions
 from common import loggingFunctions as LOG
-import json
+from common import inputSupport as DECISION
+from datetime import timedelta as TIMEDELTA
+import json, time, signal, sys
 
 class phase1:
     def __init__(self, args):
@@ -48,18 +50,23 @@ class phase2:
         return
     
     def verifyGroups(self):
+        if self.debug >= 1:
+            LOG().writeEvent(msg='The following groups have been provided as groups to upgrade:',msgType='INFO')
+            for group in self.args.firmwareGroups:
+                LOG().writeEvent(msg=f'\t{group}',msgType='INFO')
+
         if self.debug >= 2:
             LOG().writeEvent(msg='Starting Group Verify function', msgType='INFO')
         status = 'UNKNOWN'
         aciGroupListResult = self.getListOfGroups()
         if self.args.firmwareGroups:            
             #See if we match any groups that should be upgraded.
-            self.compareGroups(aciGroups=aciGroupListResult, firmwareGroups=self.args.firmwareGroups)
+            return self.compareGroups(aciGroups=aciGroupListResult, firmwareGroups=self.args.firmwareGroups)
         else:
             #If a group was not provided, list the groups that can be selected and bail out.
             self.bailOutOnSelection(aciGroupListResult)
-        
-        return status
+        # We really should never get to this line, and if we do something is wrong.    
+        LOG().writeEvent(msg="Something unexpected happened while assessing groups that we didn't account for.", msgType='FAIL')
 
     def bailOutOnSelection(self, aciGroups):
         LOG().writeEvent(msg='To use this script you must specify one of the following groups to be upgraded',msgType='WARN')
@@ -88,9 +95,14 @@ class phase2:
             if groupName in firmwareGroups:
                 LOG().writeEvent(msg=f'Adding {groupName} to list of groups to upgrade',msgType='INFO')
                 returnList[(groupName)] = group['firmwareFwGrp']['attributes']['dn']
+        if self.debug >= 1:
+            LOG().writeEvent(f'Number of matching groups found:\t{len(returnList)}', msgType='INFO')
         if self.debug >= 3:
             LOG().writeEvent(f'List of groups we are returning for uprade:\n{returnList}', msgType='INFO')
-
+        if not len(returnList) > 0:
+            self.bailOutOnSelection(aciGroups)
+        else:
+            return returnList
 
     def getListOfGroups(self):
         #Where we find groups
@@ -114,3 +126,26 @@ class phase2:
             exit()
         else:
             return aciGroups
+
+class phase3:
+    def __init__(self):
+        return
+
+    def confirmTimeToStart(self, minutesUntilStart):
+        signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
+        currentTime= time.time() 
+        startTime = currentTime + (minutesUntilStart * 60)
+        if DECISION().answerYesNo(
+            message=f'Firmware is scheduled to run at {time.ctime(startTime)}\nCurrent Local Time is: {time.ctime(currentTime)}'
+            ) == True:
+            while True:
+                time.sleep(1)
+                if time.time() > startTime:
+                    break
+                timeDifference = startTime - time.time() 
+                print(f"Count Down Timer: {TIMEDELTA(seconds=int(timeDifference))}",end='....\r',flush=True)
+        else:
+            LOG().writeEvent(msg="Exiting without upgrading", msgType='FAIL')
+            exit()
+        return
+
