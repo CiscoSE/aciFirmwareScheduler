@@ -70,29 +70,33 @@ class urlFunctions:
         return
 
     def getData(self, url, data='', headers={"Content-Type": "Application/json"},requestType='post', cookie='' ):
-        if self.debug == True:
+        if self.debug >= 1:
             loggingFunctions().writeEvent(msg=f"URL:\t\t{url}", msgType='INFO')
             loggingFunctions().writeEvent(msg=f"Data:\t\t{data}".replace(self.password,"REMOVED_PASSWORD"),msgType='INFO')
             loggingFunctions().writeEvent(msg=f"Headers:\t{headers}",msgType='INFO')
             loggingFunctions().writeEvent(msg=f"request Type:\t{requestType}", msgType='INFO')
         if requestType == 'post':
+            if self.debug >= 2:
+                loggingFunctions().writeEvent(msg=f"Starting post call to APIC", msgType='INFO')
             try:
                 request = requests.post(url, data=data, headers=headers, timeout=10, cookies=cookie, verify=False)
             except:
                loggingFunctions().writeEvent(msg=f"Unable to access {self.apicName}",msgType='FAIL')
         elif requestType == 'get':
+            if self.debug >= 2:
+                loggingFunctions().writeEvent(msg=f"Starting get call to APIC", msgType='INFO')
             try:
                 request = requests.get(url, headers=headers, verify=False, timeout=10, cookies=cookie)
             except:
                 loggingFunctions().writeEvent(msg=f"Unable to access {self.apicName}",msgType='FAIL') 
         if re.match("20[0-9]", f"{request.status_code}"):
-            if self.debug == True:
+            if self.debug >= 1:
                 loggingFunctions().writeEvent(msg="Request was successful", msgType='INFO')
             return request.text
         else:
             loggingFunctions().writeEvent(msg='Failed to access APIC API', msgType='WARN')
             loggingFunctions().writeEvent(msg=f'Reason: {request.reason}', msgType='WARN')
-            if self.debug == True:
+            if self.debug >= 1:
                 loggingFunctions().writeEvent(msg=request.text, msgType='FAIL')
             exit()
 
@@ -100,5 +104,9 @@ class urlFunctions:
         name_pwd = {'aaaUser':{'attributes': {'name': self.apicUser, 'pwd': f"{self.password}"}}}
         json_credentials = json.dumps(name_pwd)
         logonRequest = self.getData(url=f"https://{self.apicName}/api/aaaLogin.json", data=json_credentials, headers={"Content-Type": "application/json"})
+        if self.debug > 2:
+            loggingFunctions().writeEvent(msg=f'Logon Request Response:\n{logonRequest}')
         logonRequestAttributes = json.loads(logonRequest)['imdata'][0]['aaaLogin']['attributes']
-        return logonRequestAttributes['token']
+        if self.debug > 2:
+            loggingFunctions().writeEvent(msg=f'Logon Request Attributes\n{logonRequestAttributes}', msgType='INFO')
+        return {'APIC-Cookie': logonRequestAttributes['token']}

@@ -15,9 +15,11 @@ or implied.'''
 
 from common import urlFunctions
 from common import loggingFunctions as LOG
+import json
 
 class phase1:
     def __init__(self, args):
+        self.debug = args.debug
         self.args = args
         return
     
@@ -37,6 +39,27 @@ class phase1:
 
 
 class phase2:
-    def __init__(self):
+    #check of group requested exist and remediate if necessary. 
+    def __init__(self, cookie, args):
+        self.cookie = cookie
+        self.debug = args.debug
+        self.args = args
         return
     
+    def verifyGroups(self):
+        if self.debug >=3:
+            LOG().writeEvent(msg='Starting Group Verify function', msgType='INFO')
+        status = 'UNKNOWN'
+        self.getListOfGroups()
+        return status
+    
+    def getListOfGroups(self):
+
+        #Where we find groups
+        requestPath=f'https://{self.args.apicName}/api/node/class/firmwareFwGrp.json?&order-by=firmwareFwGrp.modTs|desc'
+        #Call getData to get list of groups. 
+        jsonResponse = urlFunctions(self.args).getData(url=f'{requestPath}',requestType='get',cookie=self.cookie)
+        print(self.debug)
+        if self.debug:
+            LOG().writeEvent(f'JSON Response \n{jsonResponse}')
+        return
