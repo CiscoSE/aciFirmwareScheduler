@@ -14,6 +14,7 @@ IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 or implied.'''
 
 from re import I
+from sre_constants import GROUPREF_EXISTS
 from common import urlFunctions
 from common import loggingFunctions as LOG
 from common import inputSupport as DECISION
@@ -30,7 +31,7 @@ class phase1:
         URL = urlFunctions(args=self.args)
         cookie = URL.getCookie()
         if cookie:
-            if self.args.debug:
+            if self.args.debug >=2:
                 # We only print the cookie if we are in debug mode
                 print(f"Cookie:\n{cookie}")
             # We print status either way.    
@@ -49,6 +50,17 @@ class phase2:
         self.args = args
         return
     
+    def verifyFirmware(self):
+        aciFirmwareList = self.getListOfFirmware()
+        if self.args.firmwareVersion:
+            if self.debug >= 1:
+                LOG().writeEvent(msg=f'Checking that firmware version {self.args.firmwareVersion} is available',msgType='INFO')
+            return self.compareFirmware(aciFirmwareList=aciFirmwareList, firmwareVersion=self.args.firmwareVersion)
+        else:
+            #No group was provided, so we will provide a list of options back to the console. 
+            self.bailOutOnNoFirmware(aciFirmwareList)
+        return
+
     def verifyGroups(self):
         if self.debug >= 1:
             LOG().writeEvent(msg='The following groups have been provided as groups to upgrade:',msgType='INFO')
@@ -57,18 +69,17 @@ class phase2:
 
         if self.debug >= 2:
             LOG().writeEvent(msg='Starting Group Verify function', msgType='INFO')
-        status = 'UNKNOWN'
         aciGroupListResult = self.getListOfGroups()
         if self.args.firmwareGroups:            
             #See if we match any groups that should be upgraded.
             return self.compareGroups(aciGroups=aciGroupListResult, firmwareGroups=self.args.firmwareGroups)
         else:
             #If a group was not provided, list the groups that can be selected and bail out.
-            self.bailOutOnSelection(aciGroupListResult)
+            self.bailOutOnNoGroups(aciGroupListResult)
         # We really should never get to this line, and if we do something is wrong.    
         LOG().writeEvent(msg="Something unexpected happened while assessing groups that we didn't account for.", msgType='FAIL')
 
-    def bailOutOnSelection(self, aciGroups):
+    def bailOutOnNoGroups(self, aciGroups):
         LOG().writeEvent(msg='To use this script you must specify one of the following groups to be upgraded',msgType='WARN')
         for group in aciGroups:
             if self.debug >= 3:
@@ -100,7 +111,7 @@ class phase2:
         if self.debug >= 3:
             LOG().writeEvent(f'List of groups we are returning for uprade:\n{returnList}', msgType='INFO')
         if not len(returnList) > 0:
-            self.bailOutOnSelection(aciGroups)
+            self.bailOutOnNoGroups(aciGroups)
         else:
             return returnList
 
@@ -113,19 +124,73 @@ class phase2:
             LOG().writeEvent(f'JSON Response \n{jsonResponseRAW}')
         
         # If we got nothing back (totalcount = 0), we need to do something about that.
-        aciTotalCount = json.loads(jsonResponseRAW)['totalCount']
+        aciGroupsTotalCount = json.loads(jsonResponseRAW)['totalCount']
         if self.debug >= 1:
-            LOG().writeEvent(f'Number of Groups found in ACI:\t{aciTotalCount}')
+            LOG().writeEvent(f'Number of Groups found in ACI:\t{aciGroupsTotalCount}')
 
         aciGroups = json.loads(jsonResponseRAW)['imdata']
         if self.debug >= 3:
             LOG().writeEvent(f'Groups in JSON Format:\n{aciGroups}')
-        if not int(aciTotalCount) > 0:
+        if not int(aciGroupsTotalCount) > 0:
             LOG().writeEvent(msg=f'No groups were found in ACI. This script cannot schedule firmware updates', msgType='WARN')
             LOG().writeEvent(msg=f'Create groups in ACI before running this script again', msgType='FAIL')
             exit()
         else:
             return aciGroups
+
+    def getListOfFirmware(self):
+        #Where we find firmware
+        requestPath=f'https://{self.args.apicName}/api/node/class/firmwareFirmware.json?&order-by=firmwareFirmware.modTs|desc&query-target-filter=eq(firmwareFirmware.type,"switch"'
+        #Call getData to get list of firmware. 
+        jsonResponseRAW = urlFunctions(self.args).getData(url=f'{requestPath}',requestType='get',cookie=self.cookie)
+        if self.debug >= 3:
+            LOG().writeEvent(f'JSON Response \n{jsonResponseRAW}')
+        
+        # If we got nothing back (totalcount = 0), we need to do something about that.
+        aciFirmwareTotalCount = json.loads(jsonResponseRAW)['totalCount']
+        if self.debug >= 1:
+            LOG().writeEvent(f'Number of firmware found in ACI:\t{aciFirmwareTotalCount}')
+
+        aciFirmware = json.loads(jsonResponseRAW)['imdata']
+        if self.debug >= 3:
+            LOG().writeEvent(f'Groups in JSON Format:\n{aciFirmware}')
+        if not int(aciFirmwareTotalCount) > 0:
+            LOG().writeEvent(msg=f'No Firmware were found in ACI. This script cannot schedule firmware updates', msgType='WARN')
+            LOG().writeEvent(msg=f'Import firmware for your switches into ACI before running this script again', msgType='FAIL')
+            exit()
+        else:
+            return aciFirmware
+
+    def compareFirmware(self, aciFirmwareList, firmwareVersion):
+        returnList={}
+        if self.debug >= 2:
+            LOG().writeEvent(msg='Starting Firmware Version Comparison', msgType='INFO')
+        if self.debug >= 3:
+            LOG().writeEvent(msg=f'JSON we have to work with at this point:\n{aciFirmwareList}', msgType='INFO')
+            LOG().writeEvent(msg=f'Firmware we are looking for: {firmwareVersion}', msgType='INFO')
+        for firmware in aciFirmwareList:
+            firmwareName = firmware['firmwareFirmware']['attributes']['fullVersion']
+            if self.debug >= 1:
+                LOG().writeEvent(msg=f'Assessing Firmware: {firmwareName}',msgType='INFO')
+            if self.debug >= 3:
+                LOG().writeEvent(msg=f'Firmware Attribute Information:\n{firmware}',msgType='INFO')
+            if firmwareName == firmwareVersion:
+                LOG().writeEvent(msg=f'Firmware version found',msgType='INFO')
+                return firmware['firmwareFirmware']['attributes']['fullVersion']    
+        LOG().writeEvent(f'We did not find the firmware you would like to deploy', msgType='FAIL')
+        return
+
+    def bailOutOnNoFirmware(self, aciFirmwareList):
+        LOG().writeEvent(msg='To use this script you must specify a firmware version uploaded to the APIC to upgrade to',msgType='WARN')
+        LOG().writeEvent(msg='The following are potential options',msgType='WARN')
+        for firmware in aciFirmwareList:
+            if self.debug >= 3:
+                LOG().writeEvent(msg=f'Firmware Attribute Information:\n{firmware}',msgType='INFO')
+            for key, value in firmware['firmwareFirmware']['attributes'].items():
+                if key == 'fullVersion':
+                    LOG().writeEvent(msg=f'\t{value}', msgType='WARN')
+        LOG().writeEvent(msg="Thats all folks!!!", msgType='FAIL')
+        exit()
 
 class phase3:
     def __init__(self):
@@ -149,3 +214,45 @@ class phase3:
             exit()
         return
 
+# Phase 4 and phase 1 are the same. If you are looking for phase 4, go there. 
+
+class phase5:
+    # Write to the APIC to trigger the upgrade. We use the token obtained in phase 4 (repeat of phase 1) to trigger this upgrade
+    def __init__(self, groups, args, cookie, firmwareVersion):
+        self.debug = args.debug
+        self.cookie = cookie
+        self.groups = groups
+        self.args = args
+        self.firmwareVersion = firmwareVersion
+        return
+    
+    def upgradeSwitches(self):
+        for group in self.groups:
+            self.upgradeSwitch(group)
+        return
+
+    def upgradeSwitch(self, group):
+        LOG().writeEvent(msg=f"Starting switch Upgrade for the group '{group}' to firmware version {self.firmwareVersion}", msgType='INFO')
+        dn = f"uni/fabric/maintpol-{group}"
+        if self.debug >=2:
+            LOG().writeEvent(msg=f'DN to be modified: {dn}', msgType='INFO')
+        deploymentJSON = json.dumps({
+            "maintMaintP": { 
+                "attributes":{
+                    "dn": f"{dn}",
+                    "version": f"{self.firmwareVersion}",
+                    "adminSt": "triggered"
+                }
+            }
+        })
+        if self.debug >= 3:
+            LOG().writeEvent(msg=f'JSON to deploy:\n{deploymentJSON}\n')
+        requestPath=f'https://{self.args.apicName}/api/mo/uni/fabric/maintpol-{group}.json'
+        #Call getData to get list of firmware. 
+        if self.args.failsafe == True:
+            jsonResponseRAW = urlFunctions(self.args).getData(url=f'{requestPath}',requestType='post',cookie=self.cookie, data=deploymentJSON)
+        else:
+            LOG().writeEvent(msg='No actions was taken because failsafe was not specified. If you really want to do this specify --failsafe to execute this again.',msgType='INFO')
+        if self.debug >= 1:
+            LOG().writeEvent(msg=f'Results from change request to upgrade firmware:\n{jsonResponseRAW}',msgType='INFO')
+        return

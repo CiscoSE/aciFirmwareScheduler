@@ -102,7 +102,7 @@ class urlFunctions:
         name_pwd = {'aaaUser':{'attributes': {'name': self.apicUser, 'pwd': f"{self.password}"}}}
         json_credentials = json.dumps(name_pwd)
         logonRequest = self.getData(url=f"https://{self.apicName}/api/aaaLogin.json", data=json_credentials, headers={"Content-Type": "application/json"})
-        if self.debug > 2:
+        if self.debug > 1:
             loggingFunctions().writeEvent(msg=f'Logon Request Response:\n{logonRequest}')
         logonRequestAttributes = json.loads(logonRequest)['imdata'][0]['aaaLogin']['attributes']
         if self.debug > 2:
