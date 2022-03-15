@@ -70,6 +70,7 @@ class urlFunctions:
         self.apicUser = args.apicUser
         self.password = args.password
         self.apicName = args.apicName
+        self.domain = args.domain
         if self.debug >= 4:
             self.silent = False
         else:
@@ -108,7 +109,10 @@ class urlFunctions:
             exit()
 
     def getCookie(self):
-        name_pwd = {'aaaUser':{'attributes': {'name': self.apicUser, 'pwd': f"{self.password}"}}}
+        if self.domain != '':
+            name_pwd = {'aaaUser':{'attributes': {'name': f'apic:{self.domain}\\{self.apicUser}', 'pwd': f"{self.password}"}}}
+        else:
+            name_pwd = {'aaaUser':{'attributes': {'name': self.apicUser, 'pwd': f"{self.password}"}}}
         json_credentials = json.dumps(name_pwd)
         logonRequest = self.getData(url=f"https://{self.apicName}/api/aaaLogin.json", data=json_credentials, headers={"Content-Type": "application/json"})
         if self.debug > 1:

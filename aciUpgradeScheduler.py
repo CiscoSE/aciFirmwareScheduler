@@ -53,6 +53,7 @@ argsParse.add_argument('-v',	            action='count',       dest='debug',	   
 argsParse.add_argument('-f',                action='store',       dest='firmwareVersion',   default='',            help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
 argsParse.add_argument('--failsafe',        action='store_true',  dest='failsafe',          default=False,         help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
 argsParse.add_argument('--silent',    '-s', action='store_true',  dest='silent',            default=False,         help='This switch allows the script to run with no output and will not request confirmation')
+argsParse.add_argument('--domain',    '-d', action='store',  dest='domain',            default='',            help='Used only when a domain must be selected for authentication')
 args = argsParse.parse_args()
 
 if (args.silent == True) and (int(args.debug) < 4) and (int(args.debug != 0)):
