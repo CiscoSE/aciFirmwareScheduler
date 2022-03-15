@@ -21,7 +21,8 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 class loggingFunctions:
-    def __init__(self):
+    def __init__(self, silent=False):
+        self.silent = silent
         return
 
     def writeEvent(self, msg, msgType='INFO'):
@@ -33,6 +34,8 @@ class loggingFunctions:
         return
 
     def writeScreen(self, msg, msgType='INFO'):
+        if self.silent == True:
+            return
         if msgType == 'INFO':
             print(f"[ {textColors.INFO}INFO{textColors.noColor} ] {msg}")
         elif msgType == 'WARN':
@@ -65,14 +68,15 @@ class urlFunctions:
         self.apicUser = args.apicUser
         self.password = args.password
         self.apicName = args.apicName
+        self.silent = args.silent
         return
 
     def getData(self, url, data='', headers={"Content-Type": "Application/json"},requestType='post', cookie='' ):
         if self.debug >= 1:
-            loggingFunctions().writeEvent(msg=f"URL:\t\t{url}", msgType='INFO')
-            loggingFunctions().writeEvent(msg=f"Data:\t\t{data}".replace(self.password,"REMOVED_PASSWORD"),msgType='INFO')
-            loggingFunctions().writeEvent(msg=f"Headers:\t{headers}",msgType='INFO')
-            loggingFunctions().writeEvent(msg=f"request Type:\t{requestType}", msgType='INFO')
+            loggingFunctions(self.silent).writeEvent(msg=f"URL:\t\t{url}", msgType='INFO')
+            loggingFunctions(self.silent).writeEvent(msg=f"Data:\t\t{data}".replace(self.password,"REMOVED_PASSWORD"),msgType='INFO')
+            loggingFunctions(self.silent).writeEvent(msg=f"Headers:\t{headers}",msgType='INFO')
+            loggingFunctions(self.silent).writeEvent(msg=f"request Type:\t{requestType}", msgType='INFO')
         if requestType == 'post':
             if self.debug >= 2:
                 loggingFunctions().writeEvent(msg=f"Starting post call to APIC", msgType='INFO')

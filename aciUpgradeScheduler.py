@@ -24,7 +24,8 @@ sys.path.append(os.getcwd()+'/bin')
 from common import timeFunctions
 from common import loggingFunctions as LOG
 from aciFirmwareActions import phase1
-from aciFirmwareActions import phase2
+from aciFirmwareActions import phase2a
+from aciFirmwareActions import phase2b
 from aciFirmwareActions import phase3
 from aciFirmwareActions import phase5 # This is no phase 4, this isn't a mistake
 
@@ -51,25 +52,30 @@ argsParse.add_argument('--aci-pass',  '-p', action='store',       dest='password
 argsParse.add_argument('-v',	            action='count',       dest='debug',	            default=False, 	       help='Advanced Output')
 argsParse.add_argument('-f',                action='store',       dest='firmwareVersion',   default='',            help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
 argsParse.add_argument('--failsafe',        action='store_true',  dest='failsafe',          default=False,         help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
+argsParse.add_argument('--silent',    '-s', action='store_true',  dest='silent',            default=False,         help='This switch allows the script to run with no output and will not request confirmation')
 args = argsParse.parse_args()
 
+if args.silent == True and args.debug == True:
+    LOG().writeEvent(msg=f'This script cannot be run with both verbose output and silent at the same time. You have to choose.',msgType='FAIL')
+    exit()
+
 # Phase 1 (Test to be sure we can authenticate)
-LOG().writeEvent(msg=f'########## Starting Phase 1 - Testing Authentication to {args.apicName} ##########')
+LOG(args.silent).writeEvent(msg=f'########## Starting Phase 1 - Testing Authentication to {args.apicName} ##########')
 cookie = phase1(args).getCookie()
 
 # Phase 2 (Test that the firmware group and firmware version we are looking for exists)
-LOG().writeEvent(msg=f'########## Starting Phase 2 - Checking Groups to see what should be updated ##########')
-verifiedGroups=phase2(cookie=cookie,args=args).verifyGroups()
-verifiedFirmware=phase2(cookie=cookie,args=args).verifyFirmware()
+LOG(args.silent).writeEvent(msg=f'########## Starting Phase 2 - Checking Groups to see what should be updated ##########')
+verifiedGroups=phase2a(cookie=cookie,args=args).verifyGroups()
+verifiedFirmware=phase2b(cookie=cookie,args=args).verifyFirmware()
 # We invalidate the existing cookie, because we are going to get another one when it is time to complete the firmware update.
 del cookie
 
 # Phase 3 (Confirm that the right time has been selected and then wait)
-LOG().writeEvent(msg=f'########## Starting Phase 3 - Waiting to start firmware update ##########')
-phase3().confirmTimeToStart(int(args.minutesUntilStart))
+LOG(args.silent).writeEvent(msg=f'########## Starting Phase 3 - Waiting to start firmware update ##########')
+phase3(silent = args.silent).confirmTimeToStart(int(args.minutesUntilStart))
 
 # Phase 4 (Obtain Token to trigger update)
-LOG().writeEvent(msg=f'########## Starting Phase 4 - Getting a new token ##########')
+LOG(args.silent).writeEvent(msg=f'########## Starting Phase 4 - Getting a new token ##########')
 #There is no difference between phase 1 and phase 4, so we just do it again
 cookie = phase1(args).getCookie()
 
