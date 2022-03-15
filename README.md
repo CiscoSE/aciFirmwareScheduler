@@ -9,7 +9,11 @@ This script is meant to be run in one of two ways:
 
 We recommend you run this job in a screen session because the you can validate that the group exists and the right firmware has been selected. 
 
-In all instances, the groups needed to be created in ACI prior to running this script. The script takes the group(s) given and the firmware version given, and validates they exist. When both exist you are asked to confirm that you want to proceed. By default the script waits 30 minutes, though you can run immediately, or specify the number of minutes to wait before the script runs. 
+In all instances, the groups needed to be created in ACI prior to running this script. The script takes the group(s) given and the firmware version given, and validates they exist. When both exist you are asked to confirm that you want to proceed. By default the script waits 30 minutes, though you can run immediately, or specify the number of minutes to wait before the script runs.
+
+<h2 align="center">Creating a Group in the ACI GUI</h2>
+
+If you do not have a group in ACI, you can create one through the GUI at Admin / Firmware / Switches. Use the **Actions** menu to create a group and assign the switch to use the same firmware that is currently on the switch. Otherwise you will trigger an immediate upgrade of the switch. Assigning the same firmware the switch is running keeps this from happening. 
 
 ## Prerequisites 
 This has been tested with Python 3.9 and the following additional elements:
