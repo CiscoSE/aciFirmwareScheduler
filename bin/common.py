@@ -34,18 +34,20 @@ class loggingFunctions:
         return
 
     def writeScreen(self, msg, msgType='INFO'):
-        if self.silent == True:
-            return
         if msgType == 'INFO':
-            print(f"[ {textColors.INFO}INFO{textColors.noColor} ] {msg}")
+            if self.silent == False:
+                print(f"[ {textColors.INFO}INFO{textColors.noColor} ] {msg}")
         elif msgType == 'WARN':
-            print(f"[ {textColors.WARN}WARN{textColors.noColor} ] {msg}")
+            if self.silent == False:
+                print(f"[ {textColors.WARN}WARN{textColors.noColor} ] {msg}")
         elif msgType == "FAIL":
-            print(f"[ {textColors.FAIL}FAIL{textColors.noColor} ] {msg}")
+            if self.silent == False:
+                print(f"[ {textColors.FAIL}FAIL{textColors.noColor} ] {msg}")
             exit()
         else:
-            print(f"[ {textColors.FAIL}UNKNOWN{textColors.noColor} ] {msg}")
-            print(f"This is a developer bug. Script will exit")
+            if self.silent == False:
+                print(f"[ {textColors.FAIL}UNKNOWN{textColors.noColor} ] {msg}")
+                print(f"This is a developer bug. Script will exit")
             exit()
         return
 
@@ -68,7 +70,10 @@ class urlFunctions:
         self.apicUser = args.apicUser
         self.password = args.password
         self.apicName = args.apicName
-        self.silent = args.silent
+        if self.debug >= 4:
+            self.silent = False
+        else:
+            self.silent = args.silent
         return
 
     def getData(self, url, data='', headers={"Content-Type": "Application/json"},requestType='post', cookie='' ):
@@ -79,27 +84,27 @@ class urlFunctions:
             loggingFunctions(self.silent).writeEvent(msg=f"request Type:\t{requestType}", msgType='INFO')
         if requestType == 'post':
             if self.debug >= 2:
-                loggingFunctions().writeEvent(msg=f"Starting post call to APIC", msgType='INFO')
+                loggingFunctions(self.silent).writeEvent(msg=f"Starting post call to APIC", msgType='INFO')
             try:
                 request = requests.post(url, data=data, headers=headers, timeout=10, cookies=cookie, verify=False)
             except:
-               loggingFunctions().writeEvent(msg=f"Unable to access {self.apicName}",msgType='FAIL')
+               loggingFunctions(self.silent).writeEvent(msg=f"Unable to access {self.apicName}",msgType='FAIL')
         elif requestType == 'get':
             if self.debug >= 2:
-                loggingFunctions().writeEvent(msg=f"Starting get call to APIC", msgType='INFO')
+                loggingFunctions(self.silent).writeEvent(msg=f"Starting get call to APIC", msgType='INFO')
             try:
                 request = requests.get(url, headers=headers, verify=False, timeout=10, cookies=cookie)
             except:
-                loggingFunctions().writeEvent(msg=f"Unable to access {self.apicName}",msgType='FAIL') 
+                loggingFunctions(self.silent).writeEvent(msg=f"Unable to access {self.apicName}",msgType='FAIL') 
         if re.match("20[0-9]", f"{request.status_code}"):
             if self.debug >= 1:
-                loggingFunctions().writeEvent(msg="Request was successful", msgType='INFO')
+                loggingFunctions(self.silent).writeEvent(msg="Request was successful", msgType='INFO')
             return request.text
         else:
-            loggingFunctions().writeEvent(msg='Failed to access APIC API', msgType='WARN')
-            loggingFunctions().writeEvent(msg=f'Reason: {request.reason}', msgType='WARN')
+            self.loggingFunctions(self.silent).writeEvent(msg='Failed to access APIC API', msgType='WARN')
+            loggingFunctions(self.silent).writeEvent(msg=f'Reason: {request.reason}', msgType='WARN')
             if self.debug >= 1:
-                loggingFunctions().writeEvent(msg=request.text, msgType='FAIL')
+                loggingFunctions(self.silent).writeEvent(msg=request.text, msgType='FAIL')
             exit()
 
     def getCookie(self):
@@ -107,10 +112,10 @@ class urlFunctions:
         json_credentials = json.dumps(name_pwd)
         logonRequest = self.getData(url=f"https://{self.apicName}/api/aaaLogin.json", data=json_credentials, headers={"Content-Type": "application/json"})
         if self.debug > 1:
-            loggingFunctions().writeEvent(msg=f'Logon Request Response:\n{logonRequest}')
+            loggingFunctions(self.silent).writeEvent(msg=f'Logon Request Response:\n{logonRequest}')
         logonRequestAttributes = json.loads(logonRequest)['imdata'][0]['aaaLogin']['attributes']
         if self.debug > 2:
-            loggingFunctions().writeEvent(msg=f'Logon Request Attributes\n{logonRequestAttributes}', msgType='INFO')
+            loggingFunctions(self.silent).writeEvent(msg=f'Logon Request Attributes\n{logonRequestAttributes}', msgType='INFO')
         return {'APIC-Cookie': logonRequestAttributes['token']}
 
 class inputSupport:

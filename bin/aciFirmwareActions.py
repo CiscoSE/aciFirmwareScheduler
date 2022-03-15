@@ -25,7 +25,10 @@ class phase1:
     def __init__(self, args):
         self.debug = args.debug
         self.args = args
-        self.silent = args.silent
+        if self.debug >= 4:
+            self.silent = False
+        else:
+            self.silent = args.silent
         return
     
     def getCookie(self):
@@ -49,7 +52,10 @@ class phase2a:
         self.cookie = cookie
         self.debug = args.debug
         self.args = args
-        self.silent = args.silent
+        if self.debug >= 4:
+            self.silent = False
+        else:
+            self.silent = args.silent
         return
     
     def verifyGroups(self):
@@ -135,7 +141,10 @@ class phase2b:
         self.cookie = cookie
         self.debug = args.debug
         self.args = args
-        self.silent = args.silent
+        if self.debug >= 4:
+            self.silent = False
+        else:
+            self.silent = args.silent
         return
 
     def verifyFirmware(self):
@@ -239,7 +248,10 @@ class phase5:
         self.groups = groups
         self.args = args
         self.firmwareVersion = firmwareVersion
-        self.silent = args.silent
+        if self.debug >= 4:
+            self.silent = False
+        else:
+            self.silent = args.silent
         return
     
     def upgradeSwitches(self):
@@ -270,8 +282,8 @@ class phase5:
             if int(json.loads(jsonResponseRAW)['totalCount']) == 0:
                 LOG(self.silent).writeEvent(msg='Firmware Upgrade has been triggered',msgType='INFO')
                 LOG(self.silent).writeEvent(msg='Check ACI GUI for firmware upgrade status',msgType='INFO')
+                if self.debug >= 2:
+                    LOG(self.silent).writeEvent(msg=f'Results from change request to upgrade firmware:\n{jsonResponseRAW}',msgType='INFO')
         else:
             LOG(self.silent).writeEvent(msg='No actions was taken because failsafe was not specified. If you really want to do this specify --failsafe to execute this again.',msgType='INFO')
-        if self.debug >= 1:
-            LOG(self.silent).writeEvent(msg=f'Results from change request to upgrade firmware:\n{jsonResponseRAW}',msgType='INFO')
         return

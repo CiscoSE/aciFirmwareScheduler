@@ -15,7 +15,7 @@ IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 or implied.'''
 
 #Modules
-from cmath import phase
+#from cmath import phase
 import sys, os, argparse
 
 #Add custom modules bin directory to path
@@ -49,18 +49,18 @@ argsParse.add_argument('--groups',    '-g', action='append',      dest='firmware
 argsParse.add_argument('--aci-user',  '-u', action='store',       dest='apicUser',          default=defaultUser,   help='Provide the user name for ACI access. Default is admin')
 argsParse.add_argument('--apic',      '-a', action='store',       dest='apicName',          default=defaultServer, help='Provide APIC DNS name or IP address')
 argsParse.add_argument('--aci-pass',  '-p', action='store',       dest='password',          default='',            help='Enter Password for APIC access. If none provided, you will be prompted')
-argsParse.add_argument('-v',	            action='count',       dest='debug',	            default=False, 	       help='Advanced Output')
+argsParse.add_argument('-v',	            action='count',       dest='debug',	            default=0,  	       help='Advanced Output')
 argsParse.add_argument('-f',                action='store',       dest='firmwareVersion',   default='',            help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
 argsParse.add_argument('--failsafe',        action='store_true',  dest='failsafe',          default=False,         help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
 argsParse.add_argument('--silent',    '-s', action='store_true',  dest='silent',            default=False,         help='This switch allows the script to run with no output and will not request confirmation')
 args = argsParse.parse_args()
 
-if args.silent == True and args.debug == True:
+if (args.silent == True) and (int(args.debug) < 4) and (int(args.debug != 0)):
     LOG().writeEvent(msg=f'This script cannot be run with both verbose output and silent at the same time. You have to choose.',msgType='FAIL')
     exit()
 
 # Phase 1 (Test to be sure we can authenticate)
-LOG(args.silent).writeEvent(msg=f'########## Starting Phase 1 - Testing Authentication to {args.apicName} ##########')
+LOG(args.silent).writeEvent(msg=f'########## Starting Phase 1 - Testing Authentication to {args.apicName} ##########',msgType='INFO')
 cookie = phase1(args).getCookie()
 
 # Phase 2 (Test that the firmware group and firmware version we are looking for exists)
