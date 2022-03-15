@@ -45,15 +45,15 @@ of Cisco ACI for the designated upgrade group.
 
 argsParse = argparse.ArgumentParser(description=helpmsg)
 argsParse.add_argument('--minutes', '-m', action='store',         dest='minutesUntilStart', default=30,            help="Minutes to wait until script should start the firmware update"        )
-argsParse.add_argument('--groups',    '-g', action='append',      dest='firmwareGroups',    default=[],            help='Firmware Groups you would like to upgrade with this script')
+argsParse.add_argument('--groups',    '-g', action='append',      dest='firmwareGroups',    default=[],            help='Firmware Groups you would like to upgrade with this script. You can include more than one')
 argsParse.add_argument('--aci-user',  '-u', action='store',       dest='apicUser',          default=defaultUser,   help='Provide the user name for ACI access. Default is admin')
 argsParse.add_argument('--apic',      '-a', action='store',       dest='apicName',          default=defaultServer, help='Provide APIC DNS name or IP address')
 argsParse.add_argument('--aci-pass',  '-p', action='store',       dest='password',          default='',            help='Enter Password for APIC access. If none provided, you will be prompted')
-argsParse.add_argument('-v',	            action='count',       dest='debug',	            default=0,  	       help='Advanced Output')
+argsParse.add_argument('-v',	            action='count',       dest='debug',	            default=0,  	       help='Advanced Output. Typically used for debugging')
 argsParse.add_argument('-f',                action='store',       dest='firmwareVersion',   default='',            help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
-argsParse.add_argument('--failsafe',        action='store_true',  dest='failsafe',          default=False,         help='Firmware version to deploy. We give you a list of possible firmware if you enter nothing')
+argsParse.add_argument('--failsafe',        action='store_true',  dest='failsafe',          default=False,         help='Failsafe is used to ensure that the script makes no changes unless you include this switch')
 argsParse.add_argument('--silent',    '-s', action='store_true',  dest='silent',            default=False,         help='This switch allows the script to run with no output and will not request confirmation')
-argsParse.add_argument('--domain',    '-d', action='store',  dest='domain',            default='',            help='Used only when a domain must be selected for authentication')
+argsParse.add_argument('--domain',    '-d', action='store',       dest='domain',            default='',            help='Used only when a domain must be selected for authentication')
 args = argsParse.parse_args()
 
 if (args.silent == True) and (int(args.debug) < 4) and (int(args.debug != 0)):
