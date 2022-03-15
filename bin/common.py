@@ -101,7 +101,7 @@ class urlFunctions:
                 loggingFunctions(self.silent).writeEvent(msg="Request was successful", msgType='INFO')
             return request.text
         else:
-            self.loggingFunctions(self.silent).writeEvent(msg='Failed to access APIC API', msgType='WARN')
+            loggingFunctions(self.silent).writeEvent(msg='Failed to access APIC API', msgType='WARN')
             loggingFunctions(self.silent).writeEvent(msg=f'Reason: {request.reason}', msgType='WARN')
             if self.debug >= 1:
                 loggingFunctions(self.silent).writeEvent(msg=request.text, msgType='FAIL')
